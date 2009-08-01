@@ -25,22 +25,26 @@
  * SUCH DAMAGE.
  ******************************************************************************/
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <err.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "sha.h"
 
 static void
-print_usage(const char *name)
+usage(const char *name)
 {
-	(void) fprintf(stderr,
-	    "Usage: %s format\n\n"
-	    "The following character classes are recognized:\n"
-	    "All other non-uppercase printable characters not "
-	    "conforming to the pattern of an uppercase letter "
-	    "followed by a lowercase letter are interpreted "
-	    "literally.\n",
-	    name);
+	fprintf(stderr,
+		"Usage: %s mode [file]\n\n"
+		"Calculates the message digest of a file or stream.\n"
+		"Valid modes are: 1, 224, 256, 384, and 512.\n"
+		"If no filename is given, STDIN is read.\n",
+		name);
 
 	exit(EXIT_FAILURE);
 }
@@ -48,9 +52,73 @@ print_usage(const char *name)
 int
 main(int argc, const char **argv)
 {
+	const char *filename;
+	int fd, i, type;
+	char *hash;
+
 	// Ensure proper comand line.
-	if (argc > 3)
-		print_usage(argv[0]);
+	if (argc < 2)
+		usage(argv[0]);
+	type = atoi(argv[1]);
+
+	// Handle STDIN.
+	if (argc == 2)
+	{
+		filename = "-";
+		fd = STDIN_FILENO;
+		argc++;
+	}
+
+	// Run through each file.
+	for (i = 2; i < argc; i++)
+	{
+		// Open file.
+		if (filename == NULL)
+		{
+			filename = argv[i];
+			fd = open(filename, O_RDONLY);
+			if (fd < 0)
+				err(EXIT_FAILURE, "open");
+		}
+
+		// Calculate the message digest.
+		switch (type)
+		{
+		case 1:
+			hash = sha1(fd);
+			break;
+
+		case 224:
+			hash = sha224(fd);
+			break;
+
+		case 256:
+			hash = sha256(fd);
+			break;
+
+		case 384:
+			hash = sha384(fd);
+			break;
+
+		case 512:
+			hash = sha512(fd);
+			break;
+
+		default:
+			usage(argv[0]);
+		}
+
+		if (hash == NULL)
+			errx(EXIT_FAILURE, "Couldn't calculate hash.");
+
+		// Print the message digest.
+		printf("%s  %s\n", hash, filename);
+
+		// Clean up.
+		filename = NULL;
+		free(hash);
+		close(fd);
+	}
 
 	return (EXIT_SUCCESS);
 }

@@ -48,8 +48,8 @@ struct sha1
 	word32	W[SHA1_SCHED];
 	union
 	{
-		byte	bytes[SHA1_BLK / sizeof(byte)];
-		word32	words[SHA1_BLK / sizeof(word32)];
+		byte	bytes[2 * SHA1_BLK / sizeof(byte)];
+		word32	words[2 * SHA1_BLK / sizeof(word32)];
 	} block;
 	word32	block_len;
 	word64	message_len;

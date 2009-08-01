@@ -138,34 +138,39 @@ W(struct sha1 *ctx, byte t)
 static bool
 pad(struct sha1 *ctx)
 {
-	byte blk[SHA1_BLK];
-	bool extra_blk;
+	word32 index, len_b;
 	word64 len_m;
-	word32 len_b;
+	bool extra;
 
 	// Sanity check.
 	assert(ctx != NULL);
 
+	// Determine if an extra block will be needed.
 	len_b = ctx->block_len;
 	len_m = (ctx->message_len + len_b) * 8;
-	extra_blk = len_b > SHA1_BLK - sizeof(len_m) - 1;
-	if (!extra_blk)
-	{
-		// Add trailing '1'.
-		ctx->block.bytes[len_b] = (byte) (1 << 7);
+	extra = (SHA1_BLK < len_b + sizeof(len_m) + 1);
 
-		// Add final length.
-		ctx->block.bytes[SHA1_BLK - 8] = 0xFF & (len_m >> 56);
-		ctx->block.bytes[SHA1_BLK - 7] = 0xFF & (len_m >> 48);
-		ctx->block.bytes[SHA1_BLK - 6] = 0xFF & (len_m >> 40);
-		ctx->block.bytes[SHA1_BLK - 5] = 0xFF & (len_m >> 32);
-		ctx->block.bytes[SHA1_BLK - 4] = 0xFF & (len_m >> 24);
-		ctx->block.bytes[SHA1_BLK - 3] = 0xFF & (len_m >> 16);
-		ctx->block.bytes[SHA1_BLK - 2] = 0xFF & (len_m >> 8);
-		ctx->block.bytes[SHA1_BLK - 1] = 0xFF & (len_m >> 0);
+	// Zero all remaining space.
+	memset(&ctx->block.bytes[len_b], 0, 2 * SHA1_BLK - len_b - 1);
 
-		sha1_add(ctx, ctx->block.bytes, SHA1_BLK);
-	}
+	// Add trailing '1'.
+	ctx->block.bytes[len_b] = 0x80;
+
+	// Add message length.
+	index = (!extra) ? (1) : (2);
+	ctx->block.bytes[index * SHA1_BLK - 8] = 0xFF & (len_m >> 56);
+	ctx->block.bytes[index * SHA1_BLK - 7] = 0xFF & (len_m >> 48);
+	ctx->block.bytes[index * SHA1_BLK - 6] = 0xFF & (len_m >> 40);
+	ctx->block.bytes[index * SHA1_BLK - 5] = 0xFF & (len_m >> 32);
+	ctx->block.bytes[index * SHA1_BLK - 4] = 0xFF & (len_m >> 24);
+	ctx->block.bytes[index * SHA1_BLK - 3] = 0xFF & (len_m >> 16);
+	ctx->block.bytes[index * SHA1_BLK - 2] = 0xFF & (len_m >> 8);
+	ctx->block.bytes[index * SHA1_BLK - 1] = 0xFF & (len_m >> 0);
+
+	// Add block(s).
+	sha1_add(ctx, ctx->block.bytes, SHA1_BLK);
+	if (extra)
+		sha1_add(ctx, &ctx->block.bytes[SHA1_BLK], SHA1_BLK);
 
 	return (true);
 }
@@ -304,6 +309,7 @@ sha1_add(struct sha1 *ctx, const byte *blk, int len)
 
 	// Record the processing of this block.
 	ctx->message_len += len;
+	ctx->block_len = 0;
 
 	return (true);
 }

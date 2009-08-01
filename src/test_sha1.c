@@ -39,7 +39,7 @@ static struct test_pair tests[] = {
 		"84983e441c3bd26ebaae4aa1f95129e5e54670f1"
 	},
 	{
-		"tests/8000-bit_message",
+		"tests/8000000-bit_message",
 		"34aa973cd4c4daa4f61eeb2bdbad27316534016f"
 	}
 };
