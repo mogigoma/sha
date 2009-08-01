@@ -25,6 +25,8 @@
  * SUCH DAMAGE.
  ******************************************************************************/
 
+#include <arpa/inet.h>
+
 #include <assert.h>
 #include <err.h>
 #include <inttypes.h>
@@ -37,6 +39,13 @@
 
 #define ROUNDS	80
 
+static const char *constants[] = {
+	"0x5a827999",
+	"0x6ed9eba1",
+	"0x8f1bbcdc",
+	"0xca62c1d6"
+};
+
 static const char *initial_hash[] = {
 	"0x67452301",
 	"0xefcdab89",
@@ -44,26 +53,6 @@ static const char *initial_hash[] = {
 	"0x10325476",
 	"0xc3d2e1f0"
 };
-
-// Shared utility functions.
-extern word32 rotl32(byte n, word32 x);
-
-static void
-printb(struct sha1 *ctx)
-{
-	int i;
-
-	printf("------------------------------------------------------------\n");
-	for (i = 0; i < SHA1_BLK; i += 4)
-	{
-		printf("%02x%02x%02x%02x ",
-		       ctx->block.bytes[i + 0],
-		       ctx->block.bytes[i + 1],
-		       ctx->block.bytes[i + 2],
-		       ctx->block.bytes[i + 3]);
-	}
-	printf("------------------------------------------------------------\n");
-}
 
 static word32
 Ch(word32 x, word32 y, word32 z)
@@ -86,33 +75,29 @@ Maj(word32 x, word32 y, word32 z)
 static word32
 f(byte t, word32 x, word32 y, word32 z)
 {
+	word32 (*funcs[])(word32, word32, word32) = {
+		Ch, Parity, Maj, Parity
+	};
+
 	// Sanity check.
 	assert(t < ROUNDS);
 
-	if (t <= 19)
-		return (Ch(x, y, z));
-	else if (t >= 20 && t <= 39)
-		return (Parity(x, y, z));
-	else if (t >= 40 && t <= 59)
-		return (Maj(x, y, z));
-	else
-		return (Parity(x, y, z));
+	return ((*funcs[t / 20])(x, y, z));
 }
 
 static word32
 K(byte t)
 {
+	word32 w;
+	int rc;
+
 	// Sanity check.
 	assert(t < ROUNDS);
 
-	if (t <= 19)
-		return (0x5a827999);
-	else if (t <= 39)
-		return (0x6ed9eba1);
-	else if (t <= 59)
-		return (0x8f1bbcdc);
-	else
-		return (0xca62c1d6);
+	rc = sscanf(constants[t / 20], "%x", &w);
+	assert(rc == 1);
+
+	return (w);
 }
 
 static word32
@@ -127,7 +112,7 @@ W(struct sha1 *ctx, byte t)
 	if (t < SHA1_SCHED)
 	{
 		// Create new element in message schedule.
-		new_W = ctx->block.words[t];
+		new_W = ntohl(ctx->block.words[t]);
 
 		// Add new value to message schedule
 		ctx->W[t] = new_W;
@@ -140,6 +125,7 @@ W(struct sha1 *ctx, byte t)
 		new_W ^= ctx->W[SHA1_SCHED - 8];
 		new_W ^= ctx->W[SHA1_SCHED - 14];
 		new_W ^= ctx->W[SHA1_SCHED - 16];
+		new_W = rotl32(1, new_W);
 
 		// Add new value to message schedule
 		memmove(&ctx->W[0], &ctx->W[1], sizeof(ctx->W) - sizeof(new_W));
@@ -307,16 +293,14 @@ sha1_add(struct sha1 *ctx, const byte *blk, int len)
 		c = rotl32(30, b);
 		b = a;
 		a = T;
-
-		//printf("t = %02d: %08x\t%08x\t%08x\t%08x\t%08x\t\n", t, a, b, c, d, e);
 	}
 
 	// Compute the intermediate hash value.
-	ctx->H[0] = a;
-        ctx->H[1] = b;
-        ctx->H[2] = c;
-        ctx->H[3] = d;
-        ctx->H[4] = e;
+	ctx->H[0] += a;
+        ctx->H[1] += b;
+        ctx->H[2] += c;
+        ctx->H[3] += d;
+        ctx->H[4] += e;
 
 	// Record the processing of this block.
 	ctx->message_len += len;
@@ -327,8 +311,6 @@ sha1_add(struct sha1 *ctx, const byte *blk, int len)
 bool
 sha1_calc(struct sha1 *ctx)
 {
-	int i;
-
 	if (ctx == NULL)
 		return (false);
 
@@ -337,8 +319,13 @@ sha1_calc(struct sha1 *ctx)
 		return (false);
 
 	// Translate the words to hex digits.
-	for (i = 0; i < SHA1_LEN / sizeof(word32); i++)
-		sprintf(&ctx->hash[i * 8], "%08x", ctx->H[i]);
+	sprintf(ctx->hash,
+		"%08x%08x%08x%08x%08x",
+		ctx->H[0],
+		ctx->H[1],
+		ctx->H[2],
+		ctx->H[3],
+		ctx->H[4]);
 
 	return (true);
 }

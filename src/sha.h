@@ -141,4 +141,13 @@ bool	 sha512_init(struct sha512 *ctx);
 bool	 sha512_add(struct sha512 *ctx, const byte *blk, int len);
 bool	 sha512_calc(struct sha512 *ctx);
 
+/******************************************************************************
+ * Utility functions.
+ ******************************************************************************/
+word32	rotl32(byte n, word32 x);
+word32	rotr32(byte n, word32 x);
+word64	rotr64(byte n, word64 x);
+word32	shr32(byte n, word32 x);
+word64	shr64(byte n, word64 x);
+
 #endif
