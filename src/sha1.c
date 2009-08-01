@@ -48,6 +48,23 @@ static const char *initial_hash[] = {
 // Shared utility functions.
 extern word32 rotl32(byte n, word32 x);
 
+static void
+printb(struct sha1 *ctx)
+{
+	int i;
+
+	printf("------------------------------------------------------------\n");
+	for (i = 0; i < SHA1_BLK; i += 4)
+	{
+		printf("%02x%02x%02x%02x ",
+		       ctx->block.bytes[i + 0],
+		       ctx->block.bytes[i + 1],
+		       ctx->block.bytes[i + 2],
+		       ctx->block.bytes[i + 3]);
+	}
+	printf("------------------------------------------------------------\n");
+}
+
 static word32
 Ch(word32 x, word32 y, word32 z)
 {
@@ -109,24 +126,25 @@ W(struct sha1 *ctx, byte t)
 
 	if (t < SHA1_SCHED)
 	{
+		// Create new element in message schedule.
 		new_W = ctx->block.words[t];
+
+		// Add new value to message schedule
+		ctx->W[t] = new_W;
 	}
 	else
 	{
+		// Create new element in message schedule.
 		new_W = 0;
-		new_W ^= ctx->W[t - 3];
-		new_W ^= ctx->W[t - 8];
-		new_W ^= ctx->W[t - 14];
-		new_W ^= ctx->W[t - 16];
+		new_W ^= ctx->W[SHA1_SCHED - 3];
+		new_W ^= ctx->W[SHA1_SCHED - 8];
+		new_W ^= ctx->W[SHA1_SCHED - 14];
+		new_W ^= ctx->W[SHA1_SCHED - 16];
+
+		// Add new value to message schedule
+		memmove(&ctx->W[0], &ctx->W[1], sizeof(ctx->W) - sizeof(new_W));
+		ctx->W[SHA1_SCHED - 1] = new_W;
 	}
-
-	printf("[W %d] %08x\n", t, new_W);
-
-	// Shift array to open slot for new value.
-	memmove(&ctx->W[0], &ctx->W[1], sizeof(ctx->W) - sizeof(new_W));
-
-	// Add new value.
-	ctx->W[SHA1_SCHED - 1] = new_W;
 
 	return (new_W);
 }
@@ -143,7 +161,7 @@ pad(struct sha1 *ctx)
 	assert(ctx != NULL);
 
 	len_b = ctx->block_len;
-	len_m = ctx->message_len + len_b * 8;
+	len_m = (ctx->message_len + len_b) * 8;
 	extra_blk = len_b > SHA1_BLK - sizeof(len_m) - 1;
 	if (!extra_blk)
 	{
@@ -160,7 +178,7 @@ pad(struct sha1 *ctx)
 		ctx->block.bytes[SHA1_BLK - 2] = 0xFF & (len_m >> 8);
 		ctx->block.bytes[SHA1_BLK - 1] = 0xFF & (len_m >> 0);
 
-		sha1_add(ctx, blk, SHA1_BLK);
+		sha1_add(ctx, ctx->block.bytes, SHA1_BLK);
 	}
 
 	return (true);
@@ -266,14 +284,12 @@ sha1_add(struct sha1 *ctx, const byte *blk, int len)
 
 	// Last block of message needs to be specially padded.
 	ctx->block_len = len;
-	memmove(ctx->block.bytes, blk, SHA1_BLK);
+	memmove(ctx->block.bytes, blk, len);
 	if (ctx->block_len < SHA1_BLK)
 	{
 		memset(&ctx->block.bytes[len], 0, SHA1_BLK - len);
 		return (true);
 	}
-
-	printf("--> %08x\n", ctx->block.words[0]);
 
 	// Initialize the working variables.
 	a = ctx->H[0];
@@ -303,7 +319,7 @@ sha1_add(struct sha1 *ctx, const byte *blk, int len)
         ctx->H[4] = e;
 
 	// Record the processing of this block.
-	ctx->message_len += len * 8;
+	ctx->message_len += len;
 
 	return (true);
 }
