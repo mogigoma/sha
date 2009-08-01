@@ -42,7 +42,7 @@ sha512_init(struct sha512 *ctx)
 }
 
 bool
-sha512_add(struct sha512 *ctx, byte *blk, int len)
+sha512_add(struct sha512 *ctx, const byte *blk, int len)
 {
 	return (false);
 }

@@ -30,7 +30,7 @@
 ################################################################################
 BIN	= sha testify
 CC	= gcc
-CFLAGS	= -Wall -g -I ./src
+CFLAGS	= -Wall -g -std=gnu99 -I ./src
 LIBS	= $(OBJ)/sha.o $(OBJ)/sha1.o $(OBJ)/sha224.o $(OBJ)/sha256.o \
 	  $(OBJ)/sha384.o $(OBJ)/sha512.o
 OBJ	= obj

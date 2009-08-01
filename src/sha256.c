@@ -42,7 +42,7 @@ sha256_init(struct sha256 *ctx)
 }
 
 bool
-sha256_add(struct sha256 *ctx, byte *blk, int len)
+sha256_add(struct sha256 *ctx, const byte *blk, int len)
 {
 	return (false);
 }

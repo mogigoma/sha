@@ -40,10 +40,17 @@ typedef uint64_t word64;
  ******************************************************************************/
 #define SHA1_BLK	(512 / 8)
 #define SHA1_LEN	(160 / 8)
+#define SHA1_SCHED	16
 
 struct sha1
 {
-	byte	block[SHA1_BLK];
+	word32	H[SHA1_LEN / sizeof(word32)];
+	word32	W[SHA1_SCHED];
+	union
+	{
+		byte	bytes[SHA1_BLK / sizeof(byte)];
+		word32	words[SHA1_BLK / sizeof(word32)];
+	} block;
 	word32	block_len;
 	word64	message_len;
 	char	hash[SHA1_LEN + 1];
@@ -51,7 +58,7 @@ struct sha1
 
 char	*sha1(int fd);
 bool	 sha1_init(struct sha1 *ctx);
-bool	 sha1_add(struct sha1 *ctx, byte *blk, int len);
+bool	 sha1_add(struct sha1 *ctx, const byte *blk, int len);
 bool	 sha1_calc(struct sha1 *ctx);
 
 /******************************************************************************
@@ -62,6 +69,7 @@ bool	 sha1_calc(struct sha1 *ctx);
 
 struct sha224
 {
+	word32	H[SHA224_LEN / sizeof(word32)];
 	byte	block[SHA224_BLK];
 	word32	block_len;
 	word64	message_len;
@@ -70,7 +78,7 @@ struct sha224
 
 char	*sha224(int fd);
 bool	 sha224_init(struct sha224 *ctx);
-bool	 sha224_add(struct sha224 *ctx, byte *blk, int len);
+bool	 sha224_add(struct sha224 *ctx, const byte *blk, int len);
 bool	 sha224_calc(struct sha224 *ctx);
 
 /******************************************************************************
@@ -81,6 +89,7 @@ bool	 sha224_calc(struct sha224 *ctx);
 
 struct sha256
 {
+	word32	H[SHA256_LEN / sizeof(word32)];
 	byte	block[SHA256_BLK];
 	word32	block_len;
 	word64	message_len;
@@ -89,7 +98,7 @@ struct sha256
 
 char	*sha256(int fd);
 bool	 sha256_init(struct sha256 *ctx);
-bool	 sha256_add(struct sha256 *ctx, byte *blk, int len);
+bool	 sha256_add(struct sha256 *ctx, const byte *blk, int len);
 bool	 sha256_calc(struct sha256 *ctx);
 
 /******************************************************************************
@@ -100,6 +109,7 @@ bool	 sha256_calc(struct sha256 *ctx);
 
 struct sha384
 {
+	word32	H[SHA384_LEN / sizeof(word64)];
 	byte	block[SHA384_BLK];
 	word64	block_len;
 	word64	message_len[2];
@@ -108,7 +118,7 @@ struct sha384
 
 char	*sha384(int fd);
 bool	 sha384_init(struct sha384 *ctx);
-bool	 sha384_add(struct sha384 *ctx, byte *blk, int len);
+bool	 sha384_add(struct sha384 *ctx, const byte *blk, int len);
 bool	 sha384_calc(struct sha384 *ctx);
 
 /******************************************************************************
@@ -119,6 +129,7 @@ bool	 sha384_calc(struct sha384 *ctx);
 
 struct sha512
 {
+	word32	H[SHA512_LEN / sizeof(word64)];
 	byte	block[SHA512_BLK];
 	word64	block_len;
 	word64	message_len[2];
@@ -127,7 +138,7 @@ struct sha512
 
 char	*sha512(int fd);
 bool	 sha512_init(struct sha512 *ctx);
-bool	 sha512_add(struct sha512 *ctx, byte *blk, int len);
+bool	 sha512_add(struct sha512 *ctx, const byte *blk, int len);
 bool	 sha512_calc(struct sha512 *ctx);
 
 #endif

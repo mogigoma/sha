@@ -27,6 +27,8 @@
 
 #include <assert.h>
 #include <err.h>
+#include <inttypes.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -34,6 +36,14 @@
 #include "sha.h"
 
 #define ROUNDS	80
+
+static const char *initial_hash[] = {
+	"0x67452301",
+	"0xefcdab89",
+	"0x98badcfe",
+	"0x10325476",
+	"0xc3d2e1f0"
+};
 
 // Shared utility functions.
 extern word32 rotl32(byte n, word32 x);
@@ -88,25 +98,72 @@ K(byte t)
 		return (0xca62c1d6);
 }
 
-static bool
-pad(byte *b, uint64_t l)
+static word32
+W(struct sha1 *ctx, byte t)
 {
-	bool extra_blk;
+	word32 new_W;
 
 	// Sanity check.
-	assert(b != NULL);
+	assert(ctx != NULL);
+	assert(t < ROUNDS);
 
-	/*
-	 * In the case that the message doesn't leave enough unused space at the
-	 * end of the final block to store the '1' bit and the message length,
-	 * we'll need to create a subsequent block.
-	 */
-	extra_blk = (l > SHA1_BLK - 64 - 1);
-	if (extra_blk)
+	if (t < SHA1_SCHED)
 	{
+		new_W = ctx->block.words[t];
+	}
+	else
+	{
+		new_W = 0;
+		new_W ^= ctx->W[t - 3];
+		new_W ^= ctx->W[t - 8];
+		new_W ^= ctx->W[t - 14];
+		new_W ^= ctx->W[t - 16];
 	}
 
-	return (extra_blk);
+	printf("[W %d] %08x\n", t, new_W);
+
+	// Shift array to open slot for new value.
+	memmove(&ctx->W[0], &ctx->W[1], sizeof(ctx->W) - sizeof(new_W));
+
+	// Add new value.
+	ctx->W[SHA1_SCHED - 1] = new_W;
+
+	return (new_W);
+}
+
+static bool
+pad(struct sha1 *ctx)
+{
+	byte blk[SHA1_BLK];
+	bool extra_blk;
+	word64 len_m;
+	word32 len_b;
+
+	// Sanity check.
+	assert(ctx != NULL);
+
+	len_b = ctx->block_len;
+	len_m = ctx->message_len + len_b * 8;
+	extra_blk = len_b > SHA1_BLK - sizeof(len_m) - 1;
+	if (!extra_blk)
+	{
+		// Add trailing '1'.
+		ctx->block.bytes[len_b] = (byte) (1 << 7);
+
+		// Add final length.
+		ctx->block.bytes[SHA1_BLK - 8] = 0xFF & (len_m >> 56);
+		ctx->block.bytes[SHA1_BLK - 7] = 0xFF & (len_m >> 48);
+		ctx->block.bytes[SHA1_BLK - 6] = 0xFF & (len_m >> 40);
+		ctx->block.bytes[SHA1_BLK - 5] = 0xFF & (len_m >> 32);
+		ctx->block.bytes[SHA1_BLK - 4] = 0xFF & (len_m >> 24);
+		ctx->block.bytes[SHA1_BLK - 3] = 0xFF & (len_m >> 16);
+		ctx->block.bytes[SHA1_BLK - 2] = 0xFF & (len_m >> 8);
+		ctx->block.bytes[SHA1_BLK - 1] = 0xFF & (len_m >> 0);
+
+		sha1_add(ctx, blk, SHA1_BLK);
+	}
+
+	return (true);
 }
 
 char *
@@ -155,6 +212,8 @@ sha1(int fd)
 				warn("read");
 				return (NULL);
 			}
+
+			bytes_left -= bytes_read;
 		}
 
 		// Run block through.
@@ -178,8 +237,17 @@ sha1(int fd)
 bool
 sha1_init(struct sha1 *ctx)
 {
+	int i, rc;
+
 	if (ctx == NULL)
 		return (false);
+
+	// Set the initial hash value.
+	for (i = 0; i < SHA1_LEN / sizeof(word32); i++)
+	{
+		rc = sscanf(initial_hash[i], "%x", &ctx->H[i]);
+		assert(rc == 1);
+	}
 
 	ctx->message_len = 0;
 	ctx->hash[0] = '\0';
@@ -188,10 +256,54 @@ sha1_init(struct sha1 *ctx)
 }
 
 bool
-sha1_add(struct sha1 *ctx, byte *blk, int len)
+sha1_add(struct sha1 *ctx, const byte *blk, int len)
 {
-	if (ctx == NULL)
+	word32 a, b, c, d, e, T;
+	byte t;
+
+	if (ctx == NULL || len > SHA1_BLK)
 		return (false);
+
+	// Last block of message needs to be specially padded.
+	ctx->block_len = len;
+	memmove(ctx->block.bytes, blk, SHA1_BLK);
+	if (ctx->block_len < SHA1_BLK)
+	{
+		memset(&ctx->block.bytes[len], 0, SHA1_BLK - len);
+		return (true);
+	}
+
+	printf("--> %08x\n", ctx->block.words[0]);
+
+	// Initialize the working variables.
+	a = ctx->H[0];
+	b = ctx->H[1];
+	c = ctx->H[2];
+	d = ctx->H[3];
+	e = ctx->H[4];
+
+	// Run through each round.
+	for (t = 0; t < ROUNDS; t++)
+	{
+		T = rotl32(5, a) + f(t, b, c, d) + e + K(t) + W(ctx, t);
+		e = d;
+		d = c;
+		c = rotl32(30, b);
+		b = a;
+		a = T;
+
+		//printf("t = %02d: %08x\t%08x\t%08x\t%08x\t%08x\t\n", t, a, b, c, d, e);
+	}
+
+	// Compute the intermediate hash value.
+	ctx->H[0] = a;
+        ctx->H[1] = b;
+        ctx->H[2] = c;
+        ctx->H[3] = d;
+        ctx->H[4] = e;
+
+	// Record the processing of this block.
+	ctx->message_len += len * 8;
 
 	return (true);
 }
@@ -199,14 +311,18 @@ sha1_add(struct sha1 *ctx, byte *blk, int len)
 bool
 sha1_calc(struct sha1 *ctx)
 {
+	int i;
+
 	if (ctx == NULL)
 		return (false);
 
-	ctx->hash[0] = 'T';
-	ctx->hash[1] = 'E';
-	ctx->hash[2] = 'S';
-	ctx->hash[3] = 'T';
-	ctx->hash[4] = '\0';
+	// Perform padding.
+	if (!pad(ctx))
+		return (false);
+
+	// Translate the words to hex digits.
+	for (i = 0; i < SHA1_LEN / sizeof(word32); i++)
+		sprintf(&ctx->hash[i * 8], "%08x", ctx->H[i]);
 
 	return (true);
 }

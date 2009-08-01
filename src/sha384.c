@@ -42,7 +42,7 @@ sha384_init(struct sha384 *ctx)
 }
 
 bool
-sha384_add(struct sha384 *ctx, byte *blk, int len)
+sha384_add(struct sha384 *ctx, const byte *blk, int len)
 {
 	return (false);
 }
