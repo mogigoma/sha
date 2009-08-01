@@ -28,11 +28,11 @@
 ################################################################################
 # Variables
 ################################################################################
-BIN	= swash testify
+BIN	= sha testify
 CC	= gcc
 CFLAGS	= -Wall -g -I ./src
-LIBS	= $(OBJ)/sha1.o $(OBJ)/sha224.o $(OBJ)/sha256.o $(OBJ)/sha384.o \
-	  $(OBJ)/sha512.o $(OBJ)/swash.o
+LIBS	= $(OBJ)/sha.o $(OBJ)/sha1.o $(OBJ)/sha224.o $(OBJ)/sha256.o \
+	  $(OBJ)/sha384.o $(OBJ)/sha512.o
 OBJ	= obj
 SRC	= src
 TESTS	= $(OBJ)/test_null.o $(OBJ)/test_sha1.o $(OBJ)/test_sha224.o \
@@ -44,7 +44,7 @@ TESTS	= $(OBJ)/test_null.o $(OBJ)/test_sha1.o $(OBJ)/test_sha224.o \
 ################################################################################
 all: $(BIN)
 
-swash: $(OBJ)/main_swash.o $(LIBS)
+sha: $(OBJ)/main_sha.o $(LIBS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 testify: $(OBJ)/main_testify.o $(LIBS) $(TESTS)

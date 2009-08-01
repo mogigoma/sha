@@ -25,4 +25,51 @@
  * SUCH DAMAGE.
  ******************************************************************************/
 
-#include "swash.h"
+#include <assert.h>
+
+#include "sha.h"
+
+word32
+rotl32(byte n, word32 x)
+{
+	// Sanity check.
+	assert(n < sizeof(x) * 8);
+
+	return ((x << n) | (x >> (sizeof(x) * 8 - n)));
+}
+
+word32
+rotr32(byte n, word32 x)
+{
+	// Sanity check.
+	assert(n < sizeof(x) * 8);
+
+	return ((x >> n) | (x << (sizeof(x) * 8 - n)));
+}
+
+word64
+rotr64(byte n, word64 x)
+{
+	// Sanity check.
+	assert(n < sizeof(x) * 8);
+
+	return ((x >> n) | (x << (sizeof(x) * 8 - n)));
+}
+
+word32
+shr32(byte n, word32 x)
+{
+	// Sanity check.
+	assert(n < sizeof(x) * 8);
+
+	return (x >> n);
+}
+
+word64
+shr64(byte n, word64 x)
+{
+	// Sanity check.
+	assert(n < sizeof(x) * 8);
+
+	return (x >> n);
+}

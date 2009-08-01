@@ -27,10 +27,28 @@
 
 #include <stdlib.h>
 
-#include "swash.h"
+#include "sha.h"
 
 char *
 sha256(int fd)
 {
 	return (NULL);
+}
+
+bool
+sha256_init(struct sha256 *ctx)
+{
+	return (false);
+}
+
+bool
+sha256_add(struct sha256 *ctx, byte *blk, int len)
+{
+	return (false);
+}
+
+bool
+sha256_calc(struct sha256 *ctx)
+{
+	return (false);
 }

@@ -25,21 +25,32 @@
  * SUCH DAMAGE.
  ******************************************************************************/
 
-#ifndef __SWASH_H
-#define __SWASH_H
+#include <stdio.h>
+#include <stdlib.h>
 
-#include <stdint.h>
+#include "sha.h"
 
-#define SHA1_LEN	(160 / 8)
-#define SHA224_LEN	(224 / 8)
-#define SHA256_LEN	(256 / 8)
-#define SHA384_LEN	(384 / 8)
-#define SHA512_LEN	(512 / 8)
+static void
+print_usage(const char *name)
+{
+	(void) fprintf(stderr,
+	    "Usage: %s format\n\n"
+	    "The following character classes are recognized:\n"
+	    "All other non-uppercase printable characters not "
+	    "conforming to the pattern of an uppercase letter "
+	    "followed by a lowercase letter are interpreted "
+	    "literally.\n",
+	    name);
 
-char	*sha1(int fd);
-char	*sha224(int fd);
-char	*sha256(int fd);
-char	*sha384(int fd);
-char	*sha512(int fd);
+	exit(EXIT_FAILURE);
+}
 
-#endif
+int
+main(int argc, const char **argv)
+{
+	// Ensure proper comand line.
+	if (argc > 3)
+		print_usage(argv[0]);
+
+	return (EXIT_SUCCESS);
+}

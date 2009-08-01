@@ -37,7 +37,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "swash.h"
+#include "sha.h"
 #include "testify.h"
 
 #define MAX_LEN(max, s)		(((max) < strlen((s))) ? strlen((s)) : max)
@@ -69,7 +69,7 @@ static struct unit_test tests[] = {
 	},
 	{
 		.test = test_sha224,
-		.name = "SHA-256",
+		.name = "SHA-224",
 		.summary = "Exercises the SHA-224 implementation."
 	},
 	{

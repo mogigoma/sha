@@ -25,35 +25,39 @@
  * SUCH DAMAGE.
  ******************************************************************************/
 
+#include <assert.h>
+#include <err.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
-#include "swash.h"
+#include "sha.h"
 
-#define BLK_LEN	512;
-#define ROUNDS	80;
+#define ROUNDS	80
 
-typedef uint32_t word;
+// Shared utility functions.
+extern word32 rotl32(byte n, word32 x);
 
-static word
-Ch(word x, word y, word z)
+static word32
+Ch(word32 x, word32 y, word32 z)
 {
 	return ((x & y) ^ (~x & z));
 }
 
-static word
-Parity(word x, word y, word z)
+static word32
+Parity(word32 x, word32 y, word32 z)
 {
 	return (x ^ y ^ z);
 }
 
-static word
-Maj(word x, word y, word z)
+static word32
+Maj(word32 x, word32 y, word32 z)
 {
 	return ((x & y) ^ (x & z) ^ (y & z));
 }
 
-static word
-f(uint8_t t, word x, word y, word z)
+static word32
+f(byte t, word32 x, word32 y, word32 z)
 {
 	// Sanity check.
 	assert(t < ROUNDS);
@@ -68,8 +72,8 @@ f(uint8_t t, word x, word y, word z)
 		return (Parity(x, y, z));
 }
 
-static word
-K(uint8_t t)
+static word32
+K(byte t)
 {
 	// Sanity check.
 	assert(t < ROUNDS);
@@ -84,22 +88,8 @@ K(uint8_t t)
 		return (0xca62c1d6);
 }
 
-static word
-rotl(uint8_t n, word w)
-{
-	// Sanity check.
-	assert(n < sizeof(w) * 8);
-}
-
-static word
-rotr(uint8_t n, word w)
-{
-	// Sanity check.
-	assert(n < sizeof(w) * 8);
-}
-
 static bool
-pad(block *b, uint64_t l)
+pad(byte *b, uint64_t l)
 {
 	bool extra_blk;
 
@@ -111,7 +101,7 @@ pad(block *b, uint64_t l)
 	 * end of the final block to store the '1' bit and the message length,
 	 * we'll need to create a subsequent block.
 	 */
-	extra_blk = (l > BLK_LEN - 64 - 1);
+	extra_blk = (l > SHA1_BLK - 64 - 1);
 	if (extra_blk)
 	{
 	}
@@ -122,5 +112,101 @@ pad(block *b, uint64_t l)
 char *
 sha1(int fd)
 {
-	return (NULL);
+	word32 bytes_left, bytes_read;
+	byte blk[SHA1_BLK];
+	struct sha1 ctx;
+	char *hash;
+
+	// Initialize context.
+	if (!sha1_init(&ctx))
+		return (NULL);
+
+	// Run each through each block.
+	while (true)
+	{
+		// Initial read to fill block.
+		bytes_left = SHA1_BLK;
+		bytes_read = read(fd, &blk, bytes_left);
+
+		// End of file.
+		if (bytes_read == 0)
+			break;
+
+		// Read error.
+		if (bytes_read < 0)
+		{
+			warn("read");
+			return (NULL);
+		}
+
+		// Keep trying to fill block if not yet full.
+		bytes_left -= bytes_read;
+		while (bytes_left > 0)
+		{
+			bytes_read = read(fd, &blk, bytes_left);
+
+			// End of file.
+			if (bytes_read == 0)
+				break;
+
+			// Read error.
+			if (bytes_read < 0)
+			{
+				warn("read");
+				return (NULL);
+			}
+		}
+
+		// Run block through.
+		bytes_read = SHA1_BLK - bytes_left;
+		if (!sha1_add(&ctx, blk, bytes_read))
+			return (NULL);
+	}
+
+	// Calculate the hash.
+	if (!sha1_calc(&ctx))
+		return (NULL);
+
+	// Copy hash for caller.
+	hash = strdup(ctx.hash);
+	if (hash == NULL)
+		warn("strdup");
+
+	return (hash);
+}
+
+bool
+sha1_init(struct sha1 *ctx)
+{
+	if (ctx == NULL)
+		return (false);
+
+	ctx->message_len = 0;
+	ctx->hash[0] = '\0';
+
+	return (true);
+}
+
+bool
+sha1_add(struct sha1 *ctx, byte *blk, int len)
+{
+	if (ctx == NULL)
+		return (false);
+
+	return (true);
+}
+
+bool
+sha1_calc(struct sha1 *ctx)
+{
+	if (ctx == NULL)
+		return (false);
+
+	ctx->hash[0] = 'T';
+	ctx->hash[1] = 'E';
+	ctx->hash[2] = 'S';
+	ctx->hash[3] = 'T';
+	ctx->hash[4] = '\0';
+
+	return (true);
 }

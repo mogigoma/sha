@@ -27,10 +27,28 @@
 
 #include <stdlib.h>
 
-#include "swash.h"
+#include "sha.h"
 
 char *
 sha224(int fd)
 {
 	return (NULL);
+}
+
+bool
+sha224_init(struct sha224 *ctx)
+{
+	return (false);
+}
+
+bool
+sha224_add(struct sha224 *ctx, byte *blk, int len)
+{
+	return (false);
+}
+
+bool
+sha224_calc(struct sha224 *ctx)
+{
+	return (false);
 }

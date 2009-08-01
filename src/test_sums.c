@@ -28,13 +28,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <err.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "swash.h"
 #include "test_sums.h"
 #include "testify.h"
 
@@ -52,7 +51,8 @@ test_sums(sum_fcn_t *fcn, struct test_pair *tests, int num_tests)
 		fd = open(tests[i].in, O_RDONLY);
 		if (fd == -1)
 		{
-			warn("[%d] Couldn't open test file %s", i, tests[i].in);
+			fprintf(stderr, "[%d] Couldn't open test file %s\n", i,
+				tests[i].in);
 			result = false;
 			continue;
 		}
@@ -61,12 +61,17 @@ test_sums(sum_fcn_t *fcn, struct test_pair *tests, int num_tests)
 		sum = (*fcn)(fd);
 		if (sum == NULL)
 		{
-			warnx("[%d] No sum was produced.", i);
+			fprintf(stderr, "[%d] No sum was produced.\n", i);
 			result = false;
 		}
-		else if (strcmp(sum, tests[i].out) != 1)
+		else if (strcmp(sum, tests[i].out) == 0)
 		{
-			warnx("[%d] Sum (%s) doesn't match.", i, sum);
+			fprintf(stderr, "[%d] Sum matches.\n", i);
+		}
+		else
+		{
+			fprintf(stderr, "[%d] Sum (%s) doesn't match.\n", i,
+				sum);
 			result = false;
 		}
 

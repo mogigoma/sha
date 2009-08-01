@@ -25,7 +25,7 @@
  * SUCH DAMAGE.
  ******************************************************************************/
 
-#include "swash.h"
+#include "sha.h"
 #include "test_sums.h"
 #include "testify.h"
 
