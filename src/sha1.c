@@ -39,44 +39,35 @@
 
 #define ROUNDS	80
 
-static const char *constants[] = {
-	"0x5a827999",
-	"0x6ed9eba1",
-	"0x8f1bbcdc",
-	"0xca62c1d6"
+static const word32 constants[] = {
+	0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xca62c1d6
 };
 
-static const char *initial_hash[] = {
-	"0x67452301",
-	"0xefcdab89",
-	"0x98badcfe",
-	"0x10325476",
-	"0xc3d2e1f0"
+static const word32 initial_hash[] = {
+	0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0
 };
 
 static word32
-Ch(word32 x, word32 y, word32 z)
+ROTL_32(byte n, word32 x)
 {
-	return ((x & y) ^ (~x & z));
+	// Sanity check.
+	assert(n < sizeof(x) * 8);
+
+	return ((x << n) | (x >> (sizeof(x) * 8 - n)));
 }
 
 static word32
-Parity(word32 x, word32 y, word32 z)
+Parity_32(word32 x, word32 y, word32 z)
 {
 	return (x ^ y ^ z);
 }
 
-static word32
-Maj(word32 x, word32 y, word32 z)
-{
-	return ((x & y) ^ (x & z) ^ (y & z));
-}
 
 static word32
 f(byte t, word32 x, word32 y, word32 z)
 {
 	word32 (*funcs[])(word32, word32, word32) = {
-		Ch, Parity, Maj, Parity
+		Ch_32, Parity_32, Maj_32, Parity_32
 	};
 
 	// Sanity check.
@@ -88,51 +79,10 @@ f(byte t, word32 x, word32 y, word32 z)
 static word32
 K(byte t)
 {
-	word32 w;
-	int rc;
-
 	// Sanity check.
 	assert(t < ROUNDS);
 
-	rc = sscanf(constants[t / 20], "%x", &w);
-	assert(rc == 1);
-
-	return (w);
-}
-
-static word32
-W(struct sha1 *ctx, byte t)
-{
-	word32 new_W;
-
-	// Sanity check.
-	assert(ctx != NULL);
-	assert(t < ROUNDS);
-
-	if (t < SHA1_SCHED)
-	{
-		// Create new element in message schedule.
-		new_W = ntohl(ctx->block.words[t]);
-
-		// Add new value to message schedule
-		ctx->W[t] = new_W;
-	}
-	else
-	{
-		// Create new element in message schedule.
-		new_W = 0;
-		new_W ^= ctx->W[SHA1_SCHED - 3];
-		new_W ^= ctx->W[SHA1_SCHED - 8];
-		new_W ^= ctx->W[SHA1_SCHED - 14];
-		new_W ^= ctx->W[SHA1_SCHED - 16];
-		new_W = rotl32(1, new_W);
-
-		// Add new value to message schedule
-		memmove(&ctx->W[0], &ctx->W[1], sizeof(ctx->W) - sizeof(new_W));
-		ctx->W[SHA1_SCHED - 1] = new_W;
-	}
-
-	return (new_W);
+	return (constants[t / 20]);
 }
 
 static bool
@@ -148,29 +98,37 @@ pad(struct sha1 *ctx)
 	// Determine if an extra block will be needed.
 	len_b = ctx->block_len;
 	len_m = (ctx->message_len + len_b) * 8;
-	extra = (SHA1_BLK < len_b + sizeof(len_m) + 1);
+	extra = (SHA32_BLK < len_b + sizeof(len_m) + 1);
 
 	// Zero all remaining space.
-	memset(&ctx->block.bytes[len_b], 0, 2 * SHA1_BLK - len_b - 1);
+	memset(&ctx->block.bytes[len_b], 0, 2 * SHA32_BLK - len_b);
 
 	// Add trailing '1'.
 	ctx->block.bytes[len_b] = 0x80;
 
 	// Add message length.
 	index = (!extra) ? (1) : (2);
-	ctx->block.bytes[index * SHA1_BLK - 8] = 0xFF & (len_m >> 56);
-	ctx->block.bytes[index * SHA1_BLK - 7] = 0xFF & (len_m >> 48);
-	ctx->block.bytes[index * SHA1_BLK - 6] = 0xFF & (len_m >> 40);
-	ctx->block.bytes[index * SHA1_BLK - 5] = 0xFF & (len_m >> 32);
-	ctx->block.bytes[index * SHA1_BLK - 4] = 0xFF & (len_m >> 24);
-	ctx->block.bytes[index * SHA1_BLK - 3] = 0xFF & (len_m >> 16);
-	ctx->block.bytes[index * SHA1_BLK - 2] = 0xFF & (len_m >> 8);
-	ctx->block.bytes[index * SHA1_BLK - 1] = 0xFF & (len_m >> 0);
+	ctx->block.bytes[index * SHA32_BLK - 8] = 0xFF & (len_m >> 56);
+	ctx->block.bytes[index * SHA32_BLK - 7] = 0xFF & (len_m >> 48);
+	ctx->block.bytes[index * SHA32_BLK - 6] = 0xFF & (len_m >> 40);
+	ctx->block.bytes[index * SHA32_BLK - 5] = 0xFF & (len_m >> 32);
+	ctx->block.bytes[index * SHA32_BLK - 4] = 0xFF & (len_m >> 24);
+	ctx->block.bytes[index * SHA32_BLK - 3] = 0xFF & (len_m >> 16);
+	ctx->block.bytes[index * SHA32_BLK - 2] = 0xFF & (len_m >> 8);
+	ctx->block.bytes[index * SHA32_BLK - 1] = 0xFF & (len_m >> 0);
 
-	// Add block(s).
-	sha1_add(ctx, ctx->block.bytes, SHA1_BLK);
+	// Add block.
+	if (!sha1_add(ctx, SHA32_BLK))
+		return (false);
+
+	// Add extra block.
 	if (extra)
-		sha1_add(ctx, &ctx->block.bytes[SHA1_BLK], SHA1_BLK);
+	{
+		memcpy(&ctx->block.bytes[0], &ctx->block.bytes[SHA32_BLK],
+			SHA32_BLK);
+		if (!sha1_add(ctx, SHA32_BLK))
+			return (false);
+	}
 
 	return (true);
 }
@@ -179,7 +137,6 @@ char *
 sha1(int fd)
 {
 	word32 bytes_left, bytes_read;
-	byte blk[SHA1_BLK];
 	struct sha1 ctx;
 	char *hash;
 
@@ -191,8 +148,8 @@ sha1(int fd)
 	while (true)
 	{
 		// Initial read to fill block.
-		bytes_left = SHA1_BLK;
-		bytes_read = read(fd, &blk, bytes_left);
+		bytes_left = SHA32_BLK;
+		bytes_read = read(fd, ctx.block.bytes, bytes_left);
 
 		// End of file.
 		if (bytes_read == 0)
@@ -209,7 +166,7 @@ sha1(int fd)
 		bytes_left -= bytes_read;
 		while (bytes_left > 0)
 		{
-			bytes_read = read(fd, &blk, bytes_left);
+			bytes_read = read(fd, ctx.block.bytes, bytes_left);
 
 			// End of file.
 			if (bytes_read == 0)
@@ -226,8 +183,8 @@ sha1(int fd)
 		}
 
 		// Run block through.
-		bytes_read = SHA1_BLK - bytes_left;
-		if (!sha1_add(&ctx, blk, bytes_read))
+		bytes_read = SHA32_BLK - bytes_left;
+		if (!sha1_add(&ctx, bytes_read))
 			return (NULL);
 	}
 
@@ -246,17 +203,14 @@ sha1(int fd)
 bool
 sha1_init(struct sha1 *ctx)
 {
-	int i, rc;
+	int i;
 
 	if (ctx == NULL)
 		return (false);
 
 	// Set the initial hash value.
 	for (i = 0; i < SHA1_LEN / sizeof(word32); i++)
-	{
-		rc = sscanf(initial_hash[i], "%x", &ctx->H[i]);
-		assert(rc == 1);
-	}
+		ctx->H[i] = initial_hash[i];
 
 	ctx->message_len = 0;
 	ctx->hash[0] = '\0';
@@ -265,21 +219,34 @@ sha1_init(struct sha1 *ctx)
 }
 
 bool
-sha1_add(struct sha1 *ctx, const byte *blk, int len)
+sha1_add(struct sha1 *ctx, int len)
 {
-	word32 a, b, c, d, e, T;
+	word32 a, b, c, d, e, T, W[ROUNDS];
 	byte t;
 
-	if (ctx == NULL || len > SHA1_BLK)
+	if (ctx == NULL || len > SHA32_BLK)
 		return (false);
 
 	// Last block of message needs to be specially padded.
 	ctx->block_len = len;
-	memmove(ctx->block.bytes, blk, len);
-	if (ctx->block_len < SHA1_BLK)
-	{
-		memset(&ctx->block.bytes[len], 0, SHA1_BLK - len);
+	if (ctx->block_len < SHA32_BLK)
 		return (true);
+
+	// Prepare the message schedule.
+	for (t = 0; t < ROUNDS; t++)
+	{
+		if (t < SHA32_SCHED)
+		{
+			W[t] = ntohl(ctx->block.words[t]);
+		}
+		else
+		{
+			W[t] = W[t - 3];
+			W[t] ^= W[t - 8];
+			W[t] ^= W[t - 14];
+			W[t] ^= W[t - 16];
+			W[t] = ROTL_32(1, W[t]);
+		}
 	}
 
 	// Initialize the working variables.
@@ -292,10 +259,10 @@ sha1_add(struct sha1 *ctx, const byte *blk, int len)
 	// Run through each round.
 	for (t = 0; t < ROUNDS; t++)
 	{
-		T = rotl32(5, a) + f(t, b, c, d) + e + K(t) + W(ctx, t);
+		T = ROTL_32(5, a) + f(t, b, c, d) + e + K(t) + W[t];
 		e = d;
 		d = c;
-		c = rotl32(30, b);
+		c = ROTL_32(30, b);
 		b = a;
 		a = T;
 	}
@@ -308,7 +275,7 @@ sha1_add(struct sha1 *ctx, const byte *blk, int len)
         ctx->H[4] += e;
 
 	// Record the processing of this block.
-	ctx->message_len += len;
+	ctx->message_len += ctx->block_len;
 	ctx->block_len = 0;
 
 	return (true);
@@ -325,7 +292,7 @@ sha1_calc(struct sha1 *ctx)
 		return (false);
 
 	// Translate the words to hex digits.
-	sprintf(ctx->hash,
+	snprintf(ctx->hash, sizeof(ctx->hash),
 		"%08x%08x%08x%08x%08x",
 		ctx->H[0],
 		ctx->H[1],

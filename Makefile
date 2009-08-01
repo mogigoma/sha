@@ -45,18 +45,23 @@ TESTS	= $(OBJ)/test_null.o $(OBJ)/test_sha1.o $(OBJ)/test_sha224.o \
 all: $(BIN)
 
 sha: $(OBJ)/main_sha.o $(LIBS)
-	$(CC) $(CFLAGS) -o $@ $^
+	@echo "[LD] $@"
+	@$(CC) $(CFLAGS) -o $@ $^
 
 testify: $(OBJ)/main_testify.o $(LIBS) $(TESTS)
-	$(CC) $(CFLAGS) -o $@ $^
+	@echo "[LD] $@"
+	@$(CC) $(CFLAGS) -o $@ $^
 
 clean:
-	rm -rf $(BIN)
-	rm -rf $(OBJ)
+	@echo "[RM] $(BIN)"
+	@rm -rf $(BIN)
+	@echo "[RM] $(OBJ)"
+	@rm -rf $(OBJ)
 
 ################################################################################
 # Pattern Targets
 ################################################################################
 $(OBJ)/%.o: $(SRC)/%.c
 	@mkdir -p $(OBJ)
-	$(CC) $(CFLAGS) -c -o $@ $^
+	@echo "[CC] $@"
+	@$(CC) $(CFLAGS) -c -o $@ $^
