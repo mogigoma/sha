@@ -215,15 +215,15 @@ pad(struct sha64 *ctx)
 	ctx->block.bytes[index * SHA64_BLK - 12] = 0xFF & (len_m[0] >> 24);
 	ctx->block.bytes[index * SHA64_BLK - 11] = 0xFF & (len_m[0] >> 16);
 	ctx->block.bytes[index * SHA64_BLK - 10] = 0xFF & (len_m[0] >> 8);
-	ctx->block.bytes[index * SHA64_BLK - 9] = 0xFF & (len_m[0] >> 0);
-	ctx->block.bytes[index * SHA64_BLK - 8] = 0xFF & (len_m[1] >> 56);
-	ctx->block.bytes[index * SHA64_BLK - 7] = 0xFF & (len_m[1] >> 48);
-	ctx->block.bytes[index * SHA64_BLK - 6] = 0xFF & (len_m[1] >> 40);
-	ctx->block.bytes[index * SHA64_BLK - 5] = 0xFF & (len_m[1] >> 32);
-	ctx->block.bytes[index * SHA64_BLK - 4] = 0xFF & (len_m[1] >> 24);
-	ctx->block.bytes[index * SHA64_BLK - 3] = 0xFF & (len_m[1] >> 16);
-	ctx->block.bytes[index * SHA64_BLK - 2] = 0xFF & (len_m[1] >> 8);
-	ctx->block.bytes[index * SHA64_BLK - 1] = 0xFF & (len_m[1] >> 0);
+	ctx->block.bytes[index * SHA64_BLK -  9] = 0xFF & (len_m[0] >> 0);
+	ctx->block.bytes[index * SHA64_BLK -  8] = 0xFF & (len_m[1] >> 56);
+	ctx->block.bytes[index * SHA64_BLK -  7] = 0xFF & (len_m[1] >> 48);
+	ctx->block.bytes[index * SHA64_BLK -  6] = 0xFF & (len_m[1] >> 40);
+	ctx->block.bytes[index * SHA64_BLK -  5] = 0xFF & (len_m[1] >> 32);
+	ctx->block.bytes[index * SHA64_BLK -  4] = 0xFF & (len_m[1] >> 24);
+	ctx->block.bytes[index * SHA64_BLK -  3] = 0xFF & (len_m[1] >> 16);
+	ctx->block.bytes[index * SHA64_BLK -  2] = 0xFF & (len_m[1] >> 8);
+	ctx->block.bytes[index * SHA64_BLK -  1] = 0xFF & (len_m[1] >> 0);
 
 	// Add block.
 	if (!sha64_add(ctx, SHA64_BLK))
@@ -336,7 +336,7 @@ sha64_init(struct sha64 *ctx)
 	// Set the initial hash value.
 	switch (ctx->type)
 	{
-	case SHA224:
+	case SHA384:
 		H = H_384;
 		num = sizeof(H_384) / sizeof(word);
 		break;
