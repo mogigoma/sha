@@ -81,11 +81,11 @@ bool	 sha32_calc(struct sha32 *ctx);
 struct sha64
 {
 	enum sha_type	type;
-	word32	H[SHA64_HASH / sizeof(word64)];
+	word64	H[SHA64_HASH / sizeof(word64)];
 	union
 	{
 		byte	bytes[2 * SHA64_BLK / sizeof(byte)];
-		word32	words[2 * SHA64_BLK / sizeof(word64)];
+		word64	words[2 * SHA64_BLK / sizeof(word64)];
 	} block;
 	word64	block_len;
 	word64	message_len[2];

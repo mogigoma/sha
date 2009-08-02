@@ -169,14 +169,14 @@ add128(word *a, word b)
 }
 
 static void
-mult128(word *a, word b)
+shift128(word *a, word b)
 {
 	// Sanity check.
 	assert(a != NULL);
 
-	a[1] += b;
-	if (a[1] < b)
-		a[0]++;
+	a[0] <<= b;
+	a[0] |= a[1] >> (sizeof(word) - b);
+	a[1] <<= b;
 }
 
 /******************************************************************************
@@ -186,7 +186,7 @@ static bool
 pad(struct sha64 *ctx)
 {
 	word index, len_b;
-	word64 len_m[2];
+	word len_m[2];
 	bool extra;
 
 	// Sanity check.
@@ -207,11 +207,11 @@ pad(struct sha64 *ctx)
 	len_m[0] = 0;
 	len_m[1] = 0;
 	add128(len_m, len_b);
-	mul128(len_m, 8);
+	shift128(len_m, 8);
 	ctx->block.bytes[index * SHA64_BLK - 16] = 0xFF & (len_m[0] >> 56);
 	ctx->block.bytes[index * SHA64_BLK - 15] = 0xFF & (len_m[0] >> 48);
 	ctx->block.bytes[index * SHA64_BLK - 14] = 0xFF & (len_m[0] >> 40);
-	ctx->block.bytes[index * SHA64_BLK - 13] = 0xFF & (len_m[0] >> 64);
+	ctx->block.bytes[index * SHA64_BLK - 13] = 0xFF & (len_m[0] >> 32);
 	ctx->block.bytes[index * SHA64_BLK - 12] = 0xFF & (len_m[0] >> 24);
 	ctx->block.bytes[index * SHA64_BLK - 11] = 0xFF & (len_m[0] >> 16);
 	ctx->block.bytes[index * SHA64_BLK - 10] = 0xFF & (len_m[0] >> 8);
@@ -219,7 +219,7 @@ pad(struct sha64 *ctx)
 	ctx->block.bytes[index * SHA64_BLK - 8] = 0xFF & (len_m[1] >> 56);
 	ctx->block.bytes[index * SHA64_BLK - 7] = 0xFF & (len_m[1] >> 48);
 	ctx->block.bytes[index * SHA64_BLK - 6] = 0xFF & (len_m[1] >> 40);
-	ctx->block.bytes[index * SHA64_BLK - 5] = 0xFF & (len_m[1] >> 64);
+	ctx->block.bytes[index * SHA64_BLK - 5] = 0xFF & (len_m[1] >> 32);
 	ctx->block.bytes[index * SHA64_BLK - 4] = 0xFF & (len_m[1] >> 24);
 	ctx->block.bytes[index * SHA64_BLK - 3] = 0xFF & (len_m[1] >> 16);
 	ctx->block.bytes[index * SHA64_BLK - 2] = 0xFF & (len_m[1] >> 8);
@@ -453,7 +453,7 @@ sha64_calc(struct sha64 *ctx)
 	{
 	case SHA384:
 		snprintf(ctx->hash, sizeof(ctx->hash),
-			 "%016x%016x%016x%016x%016x%016x",
+			 "%016lx%016lx%016lx%016lx%016lx%016lx",
 			 ctx->H[0],
 			 ctx->H[1],
 			 ctx->H[2],
@@ -464,7 +464,7 @@ sha64_calc(struct sha64 *ctx)
 
 	case SHA512:
 		snprintf(ctx->hash, sizeof(ctx->hash),
-			 "%016x%016x%016x%016x%016x%016x%016x%016x",
+			 "%016lx%016lx%016lx%016lx%016lx%016lx%016lx%016lx",
 			 ctx->H[0],
 			 ctx->H[1],
 			 ctx->H[2],
