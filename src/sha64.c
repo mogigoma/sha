@@ -122,6 +122,18 @@ SHR(byte n, word x)
 }
 
 static word
+Ch(word x, word y, word z)
+{
+	return ((x & y) ^ (~x & z));
+}
+
+static word
+Maj(word x, word y, word z)
+{
+	return ((x & y) ^ (x & z) ^ (y & z));
+}
+
+static word
 Sigma0(word x)
 {
 	return (ROTR(2, x) ^ ROTR(13, x) ^ ROTR(22, x));
@@ -145,13 +157,34 @@ sigma1(word x)
 	return (ROTR(17, x) ^ ROTR(19, x) ^ SHR(10, x));
 }
 
+static void
+add128(word *a, word b)
+{
+	// Sanity check.
+	assert(a != NULL);
+
+	a[1] += b;
+	if (a[1] < b)
+		a[0]++;
+}
+
+static void
+mult128(word *a, word b)
+{
+	// Sanity check.
+	assert(a != NULL);
+
+	a[1] += b;
+	if (a[1] < b)
+		a[0]++;
+}
+
 /******************************************************************************
  * Hashing functions.
  ******************************************************************************/
 static bool
 pad(struct sha64 *ctx)
 {
-#if 0
 	word index, len_b;
 	word64 len_m[2];
 	bool extra;
@@ -161,7 +194,6 @@ pad(struct sha64 *ctx)
 
 	// Determine if an extra block will be needed.
 	len_b = ctx->block_len;
-	len_m = (ctx->message_len + len_b) * 8;
 	extra = (SHA64_BLK < len_b + sizeof(len_m) + 1);
 
 	// Zero all remaining space.
@@ -172,6 +204,10 @@ pad(struct sha64 *ctx)
 
 	// Add message length.
 	index = (!extra) ? (1) : (2);
+	len_m[0] = 0;
+	len_m[1] = 0;
+	add128(len_m, len_b);
+	mul128(len_m, 8);
 	ctx->block.bytes[index * SHA64_BLK - 16] = 0xFF & (len_m[0] >> 56);
 	ctx->block.bytes[index * SHA64_BLK - 15] = 0xFF & (len_m[0] >> 48);
 	ctx->block.bytes[index * SHA64_BLK - 14] = 0xFF & (len_m[0] >> 40);
@@ -201,7 +237,7 @@ pad(struct sha64 *ctx)
 		if (!sha64_add(ctx, SHA64_BLK))
 			return (false);
 	}
-#endif
+
 	return (true);
 }
 
@@ -291,7 +327,6 @@ sha512(int fd)
 bool
 sha64_init(struct sha64 *ctx)
 {
-#if 0
 	const word *H;
 	int i, num;
 
@@ -318,20 +353,21 @@ sha64_init(struct sha64 *ctx)
 	for (i = 0; i < num; i++)
 		ctx->H[i] = H[i];
 
-	ctx->message_len = 0;
+	ctx->message_len[0] = 0;
+	ctx->message_len[1] = 0;
 	ctx->hash[0] = '\0';
-#endif
+
 	return (true);
 }
 
 bool
 sha64_add(struct sha64 *ctx, int len)
 {
-#if 0
 	word a, b, c, d, e, f, g, h, T1, T2, W[ROUNDS];
 	byte t;
 
-	if (ctx == NULL || (ctx->type != SHA384 && type != SHA512)) || len > SHA64_BLK)
+	if (ctx == NULL || (ctx->type != SHA384 && ctx->type != SHA512) ||
+	    len > SHA64_BLK)
 		return (false);
 
 	// Last block of message needs to be specially padded.
@@ -392,9 +428,13 @@ sha64_add(struct sha64 *ctx, int len)
         ctx->H[7] += h;
 
 	// Record the processing of this block.
-	ctx->message_len += ctx->block_len;
+	ctx->message_len[1] += ctx->block_len;
+	if (ctx->message_len[1] < ctx->block_len)
+		ctx->message_len[0]++;
+	ctx->message_len[0] += ctx->block_len;
+
 	ctx->block_len = 0;
-#endif
+
 	return (true);
 }
 

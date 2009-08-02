@@ -175,7 +175,6 @@ pad(struct sha32 *ctx)
 
 	// Determine if an extra block will be needed.
 	len_b = ctx->block_len;
-	len_m = (ctx->message_len + len_b) * 8;
 	extra = (SHA32_BLK < len_b + sizeof(len_m) + 1);
 
 	// Zero all remaining space.
@@ -186,6 +185,7 @@ pad(struct sha32 *ctx)
 
 	// Add message length.
 	index = (!extra) ? (1) : (2);
+	len_m = (ctx->message_len + len_b) * 8;
 	ctx->block.bytes[index * SHA32_BLK - 8] = 0xFF & (len_m >> 56);
 	ctx->block.bytes[index * SHA32_BLK - 7] = 0xFF & (len_m >> 48);
 	ctx->block.bytes[index * SHA32_BLK - 6] = 0xFF & (len_m >> 40);
