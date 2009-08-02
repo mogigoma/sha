@@ -125,7 +125,7 @@ pad(struct sha1 *ctx)
 	if (extra)
 	{
 		memcpy(&ctx->block.bytes[0], &ctx->block.bytes[SHA32_BLK],
-			SHA32_BLK);
+		       SHA32_BLK);
 		if (!sha1_add(ctx, SHA32_BLK))
 			return (false);
 	}
@@ -209,7 +209,7 @@ sha1_init(struct sha1 *ctx)
 		return (false);
 
 	// Set the initial hash value.
-	for (i = 0; i < SHA1_LEN / sizeof(word32); i++)
+	for (i = 0; i < sizeof(initial_hash) / sizeof(word32); i++)
 		ctx->H[i] = initial_hash[i];
 
 	ctx->message_len = 0;
@@ -293,12 +293,12 @@ sha1_calc(struct sha1 *ctx)
 
 	// Translate the words to hex digits.
 	snprintf(ctx->hash, sizeof(ctx->hash),
-		"%08x%08x%08x%08x%08x",
-		ctx->H[0],
-		ctx->H[1],
-		ctx->H[2],
-		ctx->H[3],
-		ctx->H[4]);
+		 "%08x%08x%08x%08x%08x",
+		 ctx->H[0],
+		 ctx->H[1],
+		 ctx->H[2],
+		 ctx->H[3],
+		 ctx->H[4]);
 
 	return (true);
 }

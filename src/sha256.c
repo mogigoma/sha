@@ -109,7 +109,7 @@ pad(struct sha256 *ctx)
 	if (extra)
 	{
 		memcpy(&ctx->block.bytes[0], &ctx->block.bytes[SHA32_BLK],
-			SHA32_BLK);
+		       SHA32_BLK);
 		if (!sha256_add(ctx, SHA32_BLK))
 			return (false);
 	}
@@ -193,7 +193,7 @@ sha256_init(struct sha256 *ctx)
 		return (false);
 
 	// Set the initial hash value.
-	for (i = 0; i < SHA256_LEN / sizeof(word32); i++)
+	for (i = 0; i < sizeof(initial_hash) / sizeof(word32); i++)
 		ctx->H[i] = initial_hash[i];
 
 	ctx->message_len = 0;
@@ -287,15 +287,15 @@ sha256_calc(struct sha256 *ctx)
 
 	// Translate the words to hex digits.
 	snprintf(ctx->hash, sizeof(ctx->hash),
-		"%08x%08x%08x%08x%08x%08x%08x%08x",
-		ctx->H[0],
-		ctx->H[1],
-		ctx->H[2],
-		ctx->H[3],
-		ctx->H[4],
-		ctx->H[5],
-		ctx->H[6],
-		ctx->H[7]);
+		 "%08x%08x%08x%08x%08x%08x%08x%08x",
+		 ctx->H[0],
+		 ctx->H[1],
+		 ctx->H[2],
+		 ctx->H[3],
+		 ctx->H[4],
+		 ctx->H[5],
+		 ctx->H[6],
+		 ctx->H[7]);
 
 	return (true);
 }

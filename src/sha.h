@@ -67,7 +67,7 @@ bool	 sha1_calc(struct sha1 *ctx);
 /******************************************************************************
  * SHA-224
  ******************************************************************************/
-#define SHA224_LEN	(224 / 8)
+#define SHA224_LEN	(256 / 8)
 
 struct sha224
 {
@@ -84,7 +84,7 @@ struct sha224
 
 char	*sha224(int fd);
 bool	 sha224_init(struct sha224 *ctx);
-bool	 sha224_add(struct sha224 *ctx, const byte *blk, int len);
+bool	 sha224_add(struct sha224 *ctx, int len);
 bool	 sha224_calc(struct sha224 *ctx);
 
 /******************************************************************************
