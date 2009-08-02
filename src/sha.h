@@ -35,12 +35,6 @@ typedef uint8_t byte;
 typedef uint32_t word32;
 typedef uint64_t word64;
 
-#define SHA32_BLK		(512 / 8)
-#define SHA32_HASH		(256 / 8)
-
-#define SHA64_BLK		(1024 / 8)
-#define SHA64_HASH		(512 / 8)
-
 enum sha_type
 {
 	SHA1,
@@ -53,6 +47,9 @@ enum sha_type
 /******************************************************************************
  * 32-bit
  ******************************************************************************/
+#define SHA32_BLK	(512 / 8)
+#define SHA32_HASH	(256 / 8)
+
 struct sha32
 {
 	enum sha_type	type;
@@ -78,6 +75,9 @@ bool	 sha32_calc(struct sha32 *ctx);
 /******************************************************************************
  * 64-bit
  ******************************************************************************/
+#define SHA64_BLK	(1024 / 8)
+#define SHA64_HASH	(512 / 8)
+
 struct sha64
 {
 	enum sha_type	type;

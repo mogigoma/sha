@@ -35,71 +35,74 @@
 
 #include "sha.h"
 
-#define ROUNDS_SHA1	80
-#define ROUNDS_SHA2	64
-#define SCHED		(SHA64_BLK / sizeof(word64))
+#define ROUNDS	80
+#define SCHED	16
 
 typedef word64 word;
 
 /******************************************************************************
  * Constants and initial values.
  ******************************************************************************/
-static const word K_1[] = {
-	0x5a827999, 0x6ed9eba1, 0x8f1bbcdc, 0xca62c1d6
+static const word K[] = {
+	0x428a2f98d728ae22, 0x7137449123ef65cd,
+	0xb5c0fbcfec4d3b2f, 0xe9b5dba58189dbbc,
+	0x3956c25bf348b538, 0x59f111f1b605d019,
+	0x923f82a4af194f9b, 0xab1c5ed5da6d8118,
+	0xd807aa98a3030242, 0x12835b0145706fbe,
+	0x243185be4ee4b28c, 0x550c7dc3d5ffb4e2,
+	0x72be5d74f27b896f, 0x80deb1fe3b1696b1,
+	0x9bdc06a725c71235, 0xc19bf174cf692694,
+	0xe49b69c19ef14ad2, 0xefbe4786384f25e3,
+	0x0fc19dc68b8cd5b5, 0x240ca1cc77ac9c65,
+	0x2de92c6f592b0275, 0x4a7484aa6ea6e483,
+	0x5cb0a9dcbd41fbd4, 0x76f988da831153b5,
+	0x983e5152ee66dfab, 0xa831c66d2db43210,
+	0xb00327c898fb213f, 0xbf597fc7beef0ee4,
+	0xc6e00bf33da88fc2, 0xd5a79147930aa725,
+	0x06ca6351e003826f, 0x142929670a0e6e70,
+	0x27b70a8546d22ffc, 0x2e1b21385c26c926,
+	0x4d2c6dfc5ac42aed, 0x53380d139d95b3df,
+	0x650a73548baf63de, 0x766a0abb3c77b2a8,
+	0x81c2c92e47edaee6, 0x92722c851482353b,
+	0xa2bfe8a14cf10364, 0xa81a664bbc423001,
+	0xc24b8b70d0f89791, 0xc76c51a30654be30,
+	0xd192e819d6ef5218, 0xd69906245565a910,
+	0xf40e35855771202a, 0x106aa07032bbd1b8,
+	0x19a4c116b8d2d0c8, 0x1e376c085141ab53,
+	0x2748774cdf8eeb99, 0x34b0bcb5e19b48a8,
+	0x391c0cb3c5c95a63, 0x4ed8aa4ae3418acb,
+	0x5b9cca4f7763e373, 0x682e6ff3d6b2b8a3,
+	0x748f82ee5defb2fc, 0x78a5636f43172f60,
+	0x84c87814a1f0ab72, 0x8cc702081a6439ec,
+	0x90befffa23631e28, 0xa4506cebde82bde9,
+	0xbef9a3f7b2c67915, 0xc67178f2e372532b,
+	0xca273eceea26619c, 0xd186b8c721c0c207,
+	0xeada7dd6cde0eb1e, 0xf57d4f7fee6ed178,
+	0x06f067aa72176fba, 0x0a637dc5a2c898a6,
+	0x113f9804bef90dae, 0x1b710b35131c471b,
+	0x28db77f523047d84, 0x32caab7b40c72493,
+	0x3c9ebe0a15c9bebc, 0x431d67c49c100d4c,
+	0x4cc5d4becb3e42b6, 0x597f299cfc657e2a,
+	0x5fcb6fab3ad6faec, 0x6c44198c4a475817
 };
 
-static const word K_2[] = {
-	0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
-	0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-
-	0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
-	0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-
-	0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
-	0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-
-	0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
-	0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-
-	0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
-	0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-
-	0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
-	0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-
-	0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
-	0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-
-	0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-	0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+static const word H_384[] = {
+	0xcbbb9d5dc1059ed8, 0x629a292a367cd507,
+	0x9159015a3070dd17, 0x152fecd8f70e5939,
+	0x67332667ffc00b31, 0x8eb44a8768581511,
+	0xdb0c2e0d64f98fa7, 0x47b5481dbefa4fa4
 };
 
-static const word H_1[] = {
-	0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0
-};
-
-static const word H_224[] = {
-	0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,
-	0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4
-};
-
-static const word H_256[] = {
-	0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-	0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+static const word H_512[] = {
+	0x6a09e667f3bcc908, 0xbb67ae8584caa73b,
+	0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
+	0x510e527fade682d1, 0x9b05688c2b3e6c1f,
+	0x1f83d9abfb41bd6b, 0x5be0cd19137e2179
 };
 
 /******************************************************************************
  * Utility functions.
  ******************************************************************************/
-static word
-ROTL(byte n, word x)
-{
-	// Sanity check.
-	assert(n < sizeof(x) * 8);
-
-	return ((x << n) | (x >> (sizeof(x) * 8 - n)));
-}
-
 static word
 ROTR(byte n, word x)
 {
@@ -116,18 +119,6 @@ SHR(byte n, word x)
 	assert(n < sizeof(x) * 8);
 
 	return (x >> n);
-}
-
-static word
-Ch(word x, word y, word z)
-{
-	return ((x & y) ^ (~x & z));
-}
-
-static word
-Maj(word x, word y, word z)
-{
-	return ((x & y) ^ (x & z) ^ (y & z));
 }
 
 static word
@@ -154,12 +145,6 @@ sigma1(word x)
 	return (ROTR(17, x) ^ ROTR(19, x) ^ SHR(10, x));
 }
 
-static word
-Parity(word x, word y, word z)
-{
-	return (x ^ y ^ z);
-}
-
 /******************************************************************************
  * Hashing functions.
  ******************************************************************************/
@@ -168,7 +153,7 @@ pad(struct sha64 *ctx)
 {
 #if 0
 	word index, len_b;
-	word64 len_m;
+	word64 len_m[2];
 	bool extra;
 
 	// Sanity check.
@@ -187,14 +172,22 @@ pad(struct sha64 *ctx)
 
 	// Add message length.
 	index = (!extra) ? (1) : (2);
-	ctx->block.bytes[index * SHA64_BLK - 8] = 0xFF & (len_m >> 56);
-	ctx->block.bytes[index * SHA64_BLK - 7] = 0xFF & (len_m >> 48);
-	ctx->block.bytes[index * SHA64_BLK - 6] = 0xFF & (len_m >> 40);
-	ctx->block.bytes[index * SHA64_BLK - 5] = 0xFF & (len_m >> 64);
-	ctx->block.bytes[index * SHA64_BLK - 4] = 0xFF & (len_m >> 24);
-	ctx->block.bytes[index * SHA64_BLK - 3] = 0xFF & (len_m >> 16);
-	ctx->block.bytes[index * SHA64_BLK - 2] = 0xFF & (len_m >> 8);
-	ctx->block.bytes[index * SHA64_BLK - 1] = 0xFF & (len_m >> 0);
+	ctx->block.bytes[index * SHA64_BLK - 16] = 0xFF & (len_m[0] >> 56);
+	ctx->block.bytes[index * SHA64_BLK - 15] = 0xFF & (len_m[0] >> 48);
+	ctx->block.bytes[index * SHA64_BLK - 14] = 0xFF & (len_m[0] >> 40);
+	ctx->block.bytes[index * SHA64_BLK - 13] = 0xFF & (len_m[0] >> 64);
+	ctx->block.bytes[index * SHA64_BLK - 12] = 0xFF & (len_m[0] >> 24);
+	ctx->block.bytes[index * SHA64_BLK - 11] = 0xFF & (len_m[0] >> 16);
+	ctx->block.bytes[index * SHA64_BLK - 10] = 0xFF & (len_m[0] >> 8);
+	ctx->block.bytes[index * SHA64_BLK - 9] = 0xFF & (len_m[0] >> 0);
+	ctx->block.bytes[index * SHA64_BLK - 8] = 0xFF & (len_m[1] >> 56);
+	ctx->block.bytes[index * SHA64_BLK - 7] = 0xFF & (len_m[1] >> 48);
+	ctx->block.bytes[index * SHA64_BLK - 6] = 0xFF & (len_m[1] >> 40);
+	ctx->block.bytes[index * SHA64_BLK - 5] = 0xFF & (len_m[1] >> 64);
+	ctx->block.bytes[index * SHA64_BLK - 4] = 0xFF & (len_m[1] >> 24);
+	ctx->block.bytes[index * SHA64_BLK - 3] = 0xFF & (len_m[1] >> 16);
+	ctx->block.bytes[index * SHA64_BLK - 2] = 0xFF & (len_m[1] >> 8);
+	ctx->block.bytes[index * SHA64_BLK - 1] = 0xFF & (len_m[1] >> 0);
 
 	// Add block.
 	if (!sha64_add(ctx, SHA64_BLK))
@@ -212,120 +205,6 @@ pad(struct sha64 *ctx)
 	return (true);
 }
 
-static void
-hash1(struct sha64 *ctx)
-{
-	word a, b, c, d, e, T, W[ROUNDS_SHA1];
-	word (*f[])(word, word, word) = {
-		Ch, Parity, Maj, Parity
-	};
-	byte t;
-
-	// Sanity check.
-	assert(ctx != NULL);
-
-	// Prepare the message schedule.
-	for (t = 0; t < ROUNDS_SHA1; t++)
-	{
-		if (t < SCHED)
-		{
-			W[t] = ntohl(ctx->block.words[t]);
-		}
-		else
-		{
-			W[t] = W[t - 3];
-			W[t] ^= W[t - 8];
-			W[t] ^= W[t - 14];
-			W[t] ^= W[t - 16];
-			W[t] = ROTL(1, W[t]);
-		}
-	}
-
-	// Initialize the working variables.
-	a = ctx->H[0];
-	b = ctx->H[1];
-	c = ctx->H[2];
-	d = ctx->H[3];
-	e = ctx->H[4];
-
-	// Run through each round.
-	for (t = 0; t < ROUNDS_SHA1; t++)
-	{
-		T = ROTL(5, a) + (*f[t / 20])(b, c, d) + e + K_1[t / 20] + W[t];
-		e = d;
-		d = c;
-		c = ROTL(30, b);
-		b = a;
-		a = T;
-	}
-
-	// Compute the intermediate hash value.
-	ctx->H[0] += a;
-        ctx->H[1] += b;
-        ctx->H[2] += c;
-        ctx->H[3] += d;
-        ctx->H[4] += e;
-}
-
-static void
-hash2(struct sha64 *ctx)
-{
-	word64 a, b, c, d, e, f, g, h, T1, T2, W[ROUNDS_SHA2];
-	byte t;
-
-	// Prepare the message schedule.
-	for (t = 0; t < ROUNDS_SHA2; t++)
-	{
-		if (t < SCHED)
-		{
-			W[t] = ntohl(ctx->block.words[t]);
-		}
-		else
-		{
-			W[t] = 0;
-			W[t] += sigma1(W[t - 2]);
-			W[t] += W[t - 7];
-			W[t] += sigma0(W[t - 15]);
-			W[t] += W[t - 16];
-		}
-	}
-
-	// Initialize the working variables.
-	a = ctx->H[0];
-	b = ctx->H[1];
-	c = ctx->H[2];
-	d = ctx->H[3];
-	e = ctx->H[4];
-	f = ctx->H[5];
-	g = ctx->H[6];
-	h = ctx->H[7];
-
-	// Run through each round.
-	for (t = 0; t < ROUNDS_SHA2; t++)
-	{
-		T1 = h + Sigma1(e) + Ch(e, f, g) + K_2[t] + W[t];
-		T2 = Sigma0(a) + Maj(a, b, c);
-		h = g;
-		g = f;
-		f = e;
-		e = d + T1;
-		d = c;
-		c = b;
-		b = a;
-		a = T1 + T2;
-	}
-
-	// Compute the intermediate hash value.
-	ctx->H[0] += a;
-        ctx->H[1] += b;
-        ctx->H[2] += c;
-        ctx->H[3] += d;
-        ctx->H[4] += e;
-        ctx->H[5] += f;
-        ctx->H[6] += g;
-        ctx->H[7] += h;
-}
-
 static char *
 sha64(int fd, enum sha_type type)
 {
@@ -333,7 +212,7 @@ sha64(int fd, enum sha_type type)
 	struct sha64 ctx;
 	char *hash;
 
-	if (type != SHA1 && type != SHA224 && type != SHA256)
+	if (type != SHA384 && type != SHA512)
 		return (NULL);
 
 	// Initialize context.
@@ -422,19 +301,14 @@ sha64_init(struct sha64 *ctx)
 	// Set the initial hash value.
 	switch (ctx->type)
 	{
-	case SHA1:
-		H = H_1;
-		num = sizeof(H_1) / sizeof(word);
-		break;
-
 	case SHA224:
-		H = H_224;
-		num = sizeof(H_224) / sizeof(word);
+		H = H_384;
+		num = sizeof(H_384) / sizeof(word);
 		break;
 
-	case SHA256:
-		H = H_256;
-		num = sizeof(H_256) / sizeof(word);
+	case SHA512:
+		H = H_512;
+		num = sizeof(H_512) / sizeof(word);
 		break;
 
 	default:
@@ -454,7 +328,10 @@ bool
 sha64_add(struct sha64 *ctx, int len)
 {
 #if 0
-	if (ctx == NULL || len > SHA64_BLK)
+	word a, b, c, d, e, f, g, h, T1, T2, W[ROUNDS];
+	byte t;
+
+	if (ctx == NULL || (ctx->type != SHA384 && type != SHA512)) || len > SHA64_BLK)
 		return (false);
 
 	// Last block of message needs to be specially padded.
@@ -462,21 +339,57 @@ sha64_add(struct sha64 *ctx, int len)
 	if (ctx->block_len < SHA64_BLK)
 		return (true);
 
-	// Set the initial hash value.
-	switch (ctx->type)
+	// Prepare the message schedule.
+	for (t = 0; t < ROUNDS; t++)
 	{
-	case SHA1:
-		hash1(ctx);
-		break;
-
-	case SHA224:
-	case SHA256:
-		hash2(ctx);
-		break;
-
-	default:
-		return (false);
+		if (t < SCHED)
+		{
+			W[t] = ntohl(ctx->block.words[t]);
+		}
+		else
+		{
+			W[t] = 0;
+			W[t] += sigma1(W[t - 2]);
+			W[t] += W[t - 7];
+			W[t] += sigma0(W[t - 15]);
+			W[t] += W[t - 16];
+		}
 	}
+
+	// Initialize the working variables.
+	a = ctx->H[0];
+	b = ctx->H[1];
+	c = ctx->H[2];
+	d = ctx->H[3];
+	e = ctx->H[4];
+	f = ctx->H[5];
+	g = ctx->H[6];
+	h = ctx->H[7];
+
+	// Run through each round.
+	for (t = 0; t < ROUNDS; t++)
+	{
+		T1 = h + Sigma1(e) + Ch(e, f, g) + K[t] + W[t];
+		T2 = Sigma0(a) + Maj(a, b, c);
+		h = g;
+		g = f;
+		f = e;
+		e = d + T1;
+		d = c;
+		c = b;
+		b = a;
+		a = T1 + T2;
+	}
+
+	// Compute the intermediate hash value.
+	ctx->H[0] += a;
+        ctx->H[1] += b;
+        ctx->H[2] += c;
+        ctx->H[3] += d;
+        ctx->H[4] += e;
+        ctx->H[5] += f;
+        ctx->H[6] += g;
+        ctx->H[7] += h;
 
 	// Record the processing of this block.
 	ctx->message_len += ctx->block_len;
@@ -500,24 +413,26 @@ sha64_calc(struct sha64 *ctx)
 	{
 	case SHA384:
 		snprintf(ctx->hash, sizeof(ctx->hash),
-			 "%08x%08x%08x%08x%08x",
+			 "%016x%016x%016x%016x%016x%016x",
 			 ctx->H[0],
 			 ctx->H[1],
 			 ctx->H[2],
 			 ctx->H[3],
-			 ctx->H[4]);
+			 ctx->H[4],
+			 ctx->H[5]);
 		break;
 
 	case SHA512:
 		snprintf(ctx->hash, sizeof(ctx->hash),
-			 "%08x%08x%08x%08x%08x%08x%08x",
+			 "%016x%016x%016x%016x%016x%016x%016x%016x",
 			 ctx->H[0],
 			 ctx->H[1],
 			 ctx->H[2],
 			 ctx->H[3],
 			 ctx->H[4],
 			 ctx->H[5],
-			 ctx->H[6]);
+			 ctx->H[6],
+			 ctx->H[7]);
 		break;
 
 	default:

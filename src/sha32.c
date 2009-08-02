@@ -37,7 +37,7 @@
 
 #define ROUNDS_SHA1	80
 #define ROUNDS_SHA2	64
-#define SCHED		(SHA32_BLK / sizeof(word32))
+#define SCHED		16
 
 typedef word32 word;
 
@@ -131,6 +131,12 @@ Maj(word x, word y, word z)
 }
 
 static word
+Parity(word x, word y, word z)
+{
+	return (x ^ y ^ z);
+}
+
+static word
 Sigma0(word x)
 {
 	return (ROTR(2, x) ^ ROTR(13, x) ^ ROTR(22, x));
@@ -152,12 +158,6 @@ static word
 sigma1(word x)
 {
 	return (ROTR(17, x) ^ ROTR(19, x) ^ SHR(10, x));
-}
-
-static word
-Parity(word x, word y, word z)
-{
-	return (x ^ y ^ z);
 }
 
 /******************************************************************************
@@ -269,7 +269,7 @@ hash1(struct sha32 *ctx)
 static void
 hash2(struct sha32 *ctx)
 {
-	word32 a, b, c, d, e, f, g, h, T1, T2, W[ROUNDS_SHA2];
+	word a, b, c, d, e, f, g, h, T1, T2, W[ROUNDS_SHA2];
 	byte t;
 
 	// Prepare the message schedule.
