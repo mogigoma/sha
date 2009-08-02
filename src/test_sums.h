@@ -28,6 +28,7 @@
 #ifndef __TEST_SUMS_H
 #define __TEST_SUMS_H
 
+#include "sha.h"
 #include "testify.h"
 
 typedef char *(sum_fcn_t)(int fd);

@@ -31,8 +31,7 @@
 BIN	= sha testify
 CC	= gcc
 CFLAGS	= -Wall -g -std=gnu99 -I ./src
-LIBS	= $(OBJ)/sha.o $(OBJ)/sha1.o $(OBJ)/sha224.o $(OBJ)/sha256.o \
-	  $(OBJ)/sha384.o $(OBJ)/sha512.o
+LIBS	= $(OBJ)/sha32.o $(OBJ)/sha64.o
 OBJ	= obj
 SRC	= src
 TESTS	= $(OBJ)/test_null.o $(OBJ)/test_sha1.o $(OBJ)/test_sha224.o \
