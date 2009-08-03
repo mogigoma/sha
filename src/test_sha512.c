@@ -34,7 +34,6 @@ static struct test_pair tests[] = {
 		"tests/fips-180-2/24-bit_message",
 		"ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"
 	},
-#if 0
 	{
 		"tests/fips-180-2/448-bit_message",
 		"8e959b75dae313da8cf4f72814fc143f8f7779c6eb9f7fa17299aeadb6889018501d289e4900f7e4331b99dec4b5433ac7d329eeb6dd26545e96e55b874be909"
@@ -57,7 +56,6 @@ static struct test_pair tests[] = {
 		"tests/wikipedia/lazy_dog",
 		"07e547d9586f6a73f73fbac0435ed76951218fb7d0c8d788a309d785436bbb642e93a252a954f23912547d1e8a3b5ed6e1bfd7097821233fa0538f3db854fee6"
 	}
-#endif
 };
 
 static const int num_tests = sizeof(tests) / sizeof(struct test_pair);

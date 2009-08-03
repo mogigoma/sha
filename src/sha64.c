@@ -136,25 +136,25 @@ Maj(word x, word y, word z)
 static word
 Sigma0(word x)
 {
-	return (ROTR(2, x) ^ ROTR(13, x) ^ ROTR(22, x));
+	return (ROTR(28, x) ^ ROTR(34, x) ^ ROTR(39, x));
 }
 
 static word
 Sigma1(word x)
 {
-	return (ROTR(6, x) ^ ROTR(11, x) ^ ROTR(25, x));
+	return (ROTR(14, x) ^ ROTR(18, x) ^ ROTR(41, x));
 }
 
 static word
 sigma0(word x)
 {
-	return (ROTR(7, x) ^ ROTR(18, x) ^ SHR(3, x));
+	return (ROTR(1, x) ^ ROTR(8, x) ^ SHR(7, x));
 }
 
 static word
 sigma1(word x)
 {
-	return (ROTR(17, x) ^ ROTR(19, x) ^ SHR(10, x));
+	return (ROTR(19, x) ^ ROTR(61, x) ^ SHR(6, x));
 }
 
 static void
@@ -404,11 +404,7 @@ sha64_add(struct sha64 *ctx, int len)
 	{
 		if (t < SCHED)
 		{
-			word z = ctx->block.words[t];
-
-			// This needs a little-endian hack.
-			W[t] = be_to_le(z);
-			printf("W[%02d] = %016lx\n", t, W[t]);
+			W[t] = be_to_le(ctx->block.words[t]);
 		}
 		else
 		{
@@ -443,9 +439,6 @@ sha64_add(struct sha64 *ctx, int len)
 		c = b;
 		b = a;
 		a = T1 + T2;
-
-		if (t <= SCHED)
-			printf("t = %d:\t%016lx\t%016lx\t%016lx\t%016lx\n\t%016lx\t%016lx\t%016lx\t%016lx\n", t, a, b, c, d, e, f, g, h);
 	}
 
 	// Compute the intermediate hash value.
