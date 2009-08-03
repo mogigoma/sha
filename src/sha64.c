@@ -179,14 +179,34 @@ shift128(word *a, word b)
 	a[1] <<= b;
 }
 
+static word
+be_to_le(word n)
+{
+	word result;
+	byte *b;
+
+	result = 0;
+
+	b = (byte *) &result;
+	b[0] = 0xFF & (n >> 56);
+	b[1] = 0xFF & (n >> 48);
+	b[2] = 0xFF & (n >> 40);
+	b[3] = 0xFF & (n >> 32);
+	b[4] = 0xFF & (n >> 24);
+	b[5] = 0xFF & (n >> 16);
+	b[6] = 0xFF & (n >>  8);
+	b[7] = 0xFF & (n >>  0);
+
+	return (result);
+}
+
 /******************************************************************************
  * Hashing functions.
  ******************************************************************************/
 static bool
 pad(struct sha64 *ctx)
 {
-	word index, len_b;
-	word len_m[2];
+	word index, len_b, len_m[2];
 	bool extra;
 
 	// Sanity check.
@@ -207,23 +227,23 @@ pad(struct sha64 *ctx)
 	len_m[0] = 0;
 	len_m[1] = 0;
 	add128(len_m, len_b);
-	shift128(len_m, 8);
+	shift128(len_m, 3);
 	ctx->block.bytes[index * SHA64_BLK - 16] = 0xFF & (len_m[0] >> 56);
 	ctx->block.bytes[index * SHA64_BLK - 15] = 0xFF & (len_m[0] >> 48);
 	ctx->block.bytes[index * SHA64_BLK - 14] = 0xFF & (len_m[0] >> 40);
 	ctx->block.bytes[index * SHA64_BLK - 13] = 0xFF & (len_m[0] >> 32);
 	ctx->block.bytes[index * SHA64_BLK - 12] = 0xFF & (len_m[0] >> 24);
 	ctx->block.bytes[index * SHA64_BLK - 11] = 0xFF & (len_m[0] >> 16);
-	ctx->block.bytes[index * SHA64_BLK - 10] = 0xFF & (len_m[0] >> 8);
-	ctx->block.bytes[index * SHA64_BLK -  9] = 0xFF & (len_m[0] >> 0);
+	ctx->block.bytes[index * SHA64_BLK - 10] = 0xFF & (len_m[0] >>  8);
+	ctx->block.bytes[index * SHA64_BLK -  9] = 0xFF & (len_m[0] >>  0);
 	ctx->block.bytes[index * SHA64_BLK -  8] = 0xFF & (len_m[1] >> 56);
 	ctx->block.bytes[index * SHA64_BLK -  7] = 0xFF & (len_m[1] >> 48);
 	ctx->block.bytes[index * SHA64_BLK -  6] = 0xFF & (len_m[1] >> 40);
 	ctx->block.bytes[index * SHA64_BLK -  5] = 0xFF & (len_m[1] >> 32);
 	ctx->block.bytes[index * SHA64_BLK -  4] = 0xFF & (len_m[1] >> 24);
 	ctx->block.bytes[index * SHA64_BLK -  3] = 0xFF & (len_m[1] >> 16);
-	ctx->block.bytes[index * SHA64_BLK -  2] = 0xFF & (len_m[1] >> 8);
-	ctx->block.bytes[index * SHA64_BLK -  1] = 0xFF & (len_m[1] >> 0);
+	ctx->block.bytes[index * SHA64_BLK -  2] = 0xFF & (len_m[1] >>  8);
+	ctx->block.bytes[index * SHA64_BLK -  1] = 0xFF & (len_m[1] >>  0);
 
 	// Add block.
 	if (!sha64_add(ctx, SHA64_BLK))
@@ -356,6 +376,7 @@ sha64_init(struct sha64 *ctx)
 	for (i = 0; i < num; i++)
 		ctx->H[i] = H[i];
 
+	ctx->block_len = 0;
 	ctx->message_len[0] = 0;
 	ctx->message_len[1] = 0;
 	ctx->hash[0] = '\0';
@@ -383,7 +404,11 @@ sha64_add(struct sha64 *ctx, int len)
 	{
 		if (t < SCHED)
 		{
-			W[t] = ntohl(ctx->block.words[t]);
+			word z = ctx->block.words[t];
+
+			// This needs a little-endian hack.
+			W[t] = be_to_le(z);
+			printf("W[%02d] = %016lx\n", t, W[t]);
 		}
 		else
 		{
@@ -418,6 +443,9 @@ sha64_add(struct sha64 *ctx, int len)
 		c = b;
 		b = a;
 		a = T1 + T2;
+
+		if (t <= SCHED)
+			printf("t = %d:\t%016lx\t%016lx\t%016lx\t%016lx\n\t%016lx\t%016lx\t%016lx\t%016lx\n", t, a, b, c, d, e, f, g, h);
 	}
 
 	// Compute the intermediate hash value.
@@ -431,11 +459,7 @@ sha64_add(struct sha64 *ctx, int len)
         ctx->H[7] += h;
 
 	// Record the processing of this block.
-	ctx->message_len[1] += ctx->block_len;
-	if (ctx->message_len[1] < ctx->block_len)
-		ctx->message_len[0]++;
-	ctx->message_len[0] += ctx->block_len;
-
+	add128(ctx->message_len, ctx->block_len);
 	ctx->block_len = 0;
 
 	return (true);

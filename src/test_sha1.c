@@ -29,17 +29,32 @@
 #include "testify.h"
 
 static struct test_pair tests[] = {
+	// FIPS-180-2.
 	{
-		"tests/24-bit_message",
+		"tests/fips-180-2/24-bit_message",
 		"a9993e364706816aba3e25717850c26c9cd0d89d"
 	},
 	{
-		"tests/448-bit_message",
+		"tests/fips-180-2/448-bit_message",
 		"84983e441c3bd26ebaae4aa1f95129e5e54670f1"
 	},
 	{
-		"tests/8000000-bit_message",
+		"tests/fips-180-2/8000000-bit_message",
 		"34aa973cd4c4daa4f61eeb2bdbad27316534016f"
+	},
+
+	// Wikipedia.
+	{
+		"tests/wikipedia/empty",
+		"da39a3ee5e6b4b0d3255bfef95601890afd80709"
+	},
+	{
+		"tests/wikipedia/lazy_cog",
+		"de9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3"
+	},
+	{
+		"tests/wikipedia/lazy_dog",
+		"2fd4e1c67a2d28fced849ee1bb76e7391b93eb12"
 	}
 };
 

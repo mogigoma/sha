@@ -29,17 +29,32 @@
 #include "testify.h"
 
 static struct test_pair tests[] = {
+	// FIPS-180-2.
 	{
-		"tests/24-bit_message",
-		"23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7",
+		"tests/fips-180-2/24-bit_message",
+		"23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7"
 	},
 	{
-		"tests/448-bit_message",
-		"75388b16512776cc5dba5da1fd890150b0c6455cb4f58b1952522525",
+		"tests/fips-180-2/448-bit_message",
+		"75388b16512776cc5dba5da1fd890150b0c6455cb4f58b1952522525"
 	},
 	{
-		"tests/8000000-bit_message",
-		"20794655980c91d8bbb4c1ea97618a4bf03f42581948b2ee4ee7ad67",
+		"tests/fips-180-2/8000000-bit_message",
+		"20794655980c91d8bbb4c1ea97618a4bf03f42581948b2ee4ee7ad67"
+	},
+
+	// Wikipedia.
+	{
+		"tests/wikipedia/empty",
+		"d14a028c2a3a2bc9476102bb288234c415a2b01f828ea62ac5b3e42f"
+	},
+	{
+		"tests/wikipedia/lazy_cog",
+		"fee755f44a55f20fb3362cdc3c493615b3cb574ed95ce610ee5b1e9b"
+	},
+	{
+		"tests/wikipedia/lazy_dog",
+		"730e109bd7a8a32b1cb9d9a09aa2325d2430587ddbc0c38bad911525"
 	}
 };
 

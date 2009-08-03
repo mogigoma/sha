@@ -451,6 +451,7 @@ sha32_init(struct sha32 *ctx)
 	for (i = 0; i < num; i++)
 		ctx->H[i] = H[i];
 
+	ctx->block_len = 0;
 	ctx->message_len = 0;
 	ctx->hash[0] = '\0';
 
