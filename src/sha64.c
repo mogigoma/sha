@@ -175,7 +175,7 @@ shift128(word *a, word b)
 	assert(a != NULL);
 
 	a[0] <<= b;
-	a[0] |= a[1] >> (sizeof(word) - b);
+	a[0] |= a[1] >> (sizeof(word) * 8 - b);
 	a[1] <<= b;
 }
 
@@ -224,8 +224,8 @@ pad(struct sha64 *ctx)
 
 	// Add message length.
 	index = (!extra) ? (1) : (2);
-	len_m[0] = 0;
-	len_m[1] = 0;
+	len_m[0] = ctx->message_len[0];
+	len_m[1] = ctx->message_len[1];
 	add128(len_m, len_b);
 	shift128(len_m, 3);
 	ctx->block.bytes[index * SHA64_BLK - 16] = 0xFF & (len_m[0] >> 56);
