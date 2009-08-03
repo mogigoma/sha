@@ -35,7 +35,7 @@ static struct test_pair tests[] = {
 		"cb00753f45a35e8bb5a03d699ac65007272c32ab0eded1631a8b605a43ff5bed8086072ba1e7cc2358baeca134c825a7"
 	},
 	{
-		"tests/fips-180-2/448-bit_message",
+		"tests/fips-180-2/896-bit_message",
 		"09330c33f71147e83d192fc782cd1b4753111b173b3b05d22fa08086e3b0f712fcc7c71a557e2db966c3e9fa91746039"
 	},
 	{
