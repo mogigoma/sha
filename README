@@ -1,0 +1,13 @@
+This is an old project of mine that I wrote to learn more about C and SHA.
+
+To compile the program:
+
+	$ make
+
+To run the program, and get help:
+
+	$ ./sha
+
+To run the test suite:
+
+	$ ./testify -a
